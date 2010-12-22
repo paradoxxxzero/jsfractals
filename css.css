@@ -1,0 +1,22 @@
+body {
+   padding: 0;
+   margin: 0;
+   background-color: #000;
+}
+
+#watermark {
+   position: absolute;
+   top: 1px;
+   right: 1px;
+   font-size: 0.5em;
+}
+
+#watermark a {
+   color: #222;
+   opacity: 0.3;
+   text-decoration: none;
+}
+
+.moving {
+   cursor: move;
+}
