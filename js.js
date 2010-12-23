@@ -17,7 +17,9 @@
  along with this program.  If not, see http://www.gnu.org/licenses/.
  */
 
-var _canvas, _c, _scr, _mode, _time;
+var _canvas, _c, _scr, _mode, _time, _timer, _data, _metadata;
+var _plotid = 0;
+var _flex = 4;
 var _pow = 1.1;
 var _precision = 25;
 var _step = 1;
@@ -67,14 +69,6 @@ function preCompute() {
     _reg.Y.__normed_range = _reg.Y.__range / _scr.h;
 }
 
-function pix(x, y, r, g, b, a, data) {
-    var index = (x + y * _scr.w) * 4;
-    data[index++] = r;
-    data[index++] = g;
-    data[index++] = b;
-    data[index] = a;
-}
-
 function mandelbrot(X, Y) {
     // Iterating to see if Z is cool
     var r = 0;
@@ -97,33 +91,61 @@ function mandelbrot(X, Y) {
     return 0;
 }
 
-function fractalPlot(data) {
-    for(var x = 0 ; x <= _scr.w ; x++) {
+function fractalPlot(it, plotid) {
+    var xstart, ystart;
+    xstart = Math.floor(it / _flex);
+    ystart = it % _flex;
+    for(var x = xstart ; x <= _scr.w ; x+=_flex) {
 	var X = x2X(x);
-	for(var y = 0 ; y <= _scr.h ; y++) {
-	    var nit = mandelbrot(X, y2Y(y));
-	    var r = nit * 15;
-	    var g = 0;
-	    var b = 0;
-	    pix(x, y, r, g, b, 255, data);
+	for(var y = ystart ; y <= _scr.h ; y+=_flex) {
+	    if(plotid != _plotid) return;
+	    var nit = 3 * 255  * mandelbrot(X, y2Y(y)) / _precision;
+	    var i = (x + y * _scr.w) * 4;
+	    var i0 = i;
+	    _metadata[i++] = nit;
+	    _metadata[i++] = nit - 255;
+	    _metadata[i++] = nit - 2 * 255;
+	    _metadata[i++] = 255;
 	}
     }
 }
 
+function rplot(lvl, plotid) {
+    fractalPlot(lvl, plotid);
+    _data.data = _metadata;
+    _c.putImageData(_data, 0, 0);
+
+    var stime = ".";
+    for(var p = 0; p < lvl; p++) {
+	stime += ".";
+    }
+    document.title = (new Date().getTime() - _time) + stime;
+    if(lvl < _flex*_flex - 1) {
+	_timer = setTimeout(
+	    function () {
+		rplot(lvl+1, plotid);
+	    }, 5
+	);
+    }
+}
+
 function plot() {
+    _plotid++;
+    clearTimeout(_timer);
     _time = new Date().getTime();
-    var data = _c.createImageData(_scr.w, _scr.h);
-    var metadata = data.data;
-    fractalPlot(metadata);
-    data.data = metadata;
-    _c.putImageData(data, 0, 0);
-    document.title = "" + (new Date().getTime() - _time);
+    _data = _c.getImageData(0, 0, _scr.w, _scr.h);
+    _metadata = _data.data;
+    _timer = setTimeout(
+	function () {
+	    rplot(0, _plotid);
+	}, 10
+    );
 }
 
 function size() {
     _scr = {
-	h: _canvas.height = window.innerHeight - 3,
-	w: _canvas.width = window.innerWidth - 3};
+	h: _canvas.height = window.innerHeight,
+	w: _canvas.width = window.innerWidth};
     preCompute();
 }
 
@@ -168,13 +190,26 @@ function mup(event) {
 }
 
 function kdown(event) {
-   if(event.keyCode == 107) {
-       _precision *= 2;
-       plot();
-   } else if(event.keyCode == 109) {
-       _precision /= 2;
-       plot();
-   }
+    switch(event.keyCode) {
+    case 107:
+    case 38:
+	_precision *= 2;
+	break;
+    case 109:
+    case 38:
+	_precision /= 2;
+	break;
+    case 39:
+	_precision *= 1.1;
+	break;
+    case 37:
+	_precision /= 1.1;
+	break;
+    default:
+	return;
+    }
+
+    plot();
 }
 
 function wheel(event, delta) {
