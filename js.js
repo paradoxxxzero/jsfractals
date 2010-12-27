@@ -18,8 +18,9 @@
  */
 
 var _canvas, _c, _scr, _mode, _time, _timer, _data, _metadata;
+var _smooth = true;
 var _plotid = 0;
-var _flex = 4;
+var _flex = 3;
 var _pow = 1.1;
 var _precision = 25;
 var _step = 1;
@@ -70,6 +71,18 @@ function preCompute() {
 }
 
 function mandelbrot(X, Y) {
+    var X2 = X*X;
+    var X2X = X2 + 2*X;
+    var Y2 = Y*Y;
+    var sN = X2 + Y2;
+    if(
+    // Eliminating the main cardioid
+	sN * (8 * sN - 3) < .09375 - X ||
+	    // And the period 2 cycle
+	    X2X + Y2 < -.9375
+    ) {
+	return 0;
+    }
     // Iterating to see if Z is cool
     var r = 0;
     var i = 0;
@@ -78,7 +91,7 @@ function mandelbrot(X, Y) {
 	var i2 = i*i;
 	// |Z| must be inferior to 2 (Mandelbrot voodoo 2 ~ +∞)
 	if (r2 + i2 > 4) {
-	    return n;
+	    return _smooth ? n - Math.log(Math.log(r2+i2)) / Math.LN2 : n;
 	}
 	// Next step :
 	// Z = Z² + P = r + i sqrt(-1)
@@ -97,11 +110,10 @@ function fractalPlot(it, plotid) {
     ystart = it % _flex;
     for(var x = xstart ; x <= _scr.w ; x+=_flex) {
 	var X = x2X(x);
+	if(plotid != _plotid) return;
 	for(var y = ystart ; y <= _scr.h ; y+=_flex) {
-	    if(plotid != _plotid) return;
-	    var nit = 3 * 255  * mandelbrot(X, y2Y(y)) / _precision;
+	    var nit = 3 * 255 * mandelbrot(X, y2Y(y)) / _precision;
 	    var i = (x + y * _scr.w) * 4;
-	    var i0 = i;
 	    _metadata[i++] = nit;
 	    _metadata[i++] = nit - 255;
 	    _metadata[i++] = nit - 2 * 255;
@@ -145,7 +157,8 @@ function plot() {
 function size() {
     _scr = {
 	h: _canvas.height = window.innerHeight,
-	w: _canvas.width = window.innerWidth};
+	w: _canvas.width = window.innerWidth
+    };
     preCompute();
 }
 
@@ -196,7 +209,7 @@ function kdown(event) {
 	_precision *= 2;
 	break;
     case 109:
-    case 38:
+    case 40:
 	_precision /= 2;
 	break;
     case 39:
@@ -204,6 +217,9 @@ function kdown(event) {
 	break;
     case 37:
 	_precision /= 1.1;
+	break;
+    case 32:
+	_smooth = !_smooth;
 	break;
     default:
 	return;
@@ -264,6 +280,7 @@ $(window).load(
 	_canvas = $('#canvas')[0];
 	_c = _canvas.getContext('2d');
 	size();
+	_reg.X.zcoef = _reg.Y.zcoef * _scr.w / _scr.h;
 	var nw = {
 	    x: Math.pow(_pow, _reg.X.zcoef),
 	    y: Math.pow(_pow, _reg.Y.zcoef)
