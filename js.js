@@ -23,6 +23,11 @@ var _plotid = 0;
 var _flex = 3;
 var _pow = 1.1;
 var _precision = 25;
+var _epsilon = .0001;
+var _gamma = 2;
+var _juliacst = new Complex(-.8, .156);
+var _juliacoef = 2;
+var _fractal = mandelbrot;
 var _step = 1;
 var _reg = {
     X: {
@@ -91,7 +96,9 @@ function mandelbrot(X, Y) {
 	var i2 = i*i;
 	// |Z| must be inferior to 2 (Mandelbrot voodoo 2 ~ +∞)
 	if (r2 + i2 > 4) {
-	    return _smooth ? n - Math.log(Math.log(r2+i2)) / Math.LN2 : n;
+	    if(_smooth) n -= Math.log(Math.log(r2+i2)) / Math.LN2;
+	    n = 3 * 255 * n / _precision;
+	    return [n, n - 255, n - 2 * 255];
 	}
 	// Next step :
 	// Z = Z² + P = r + i sqrt(-1)
@@ -101,22 +108,66 @@ function mandelbrot(X, Y) {
 	i = 2 * r * i + Y;
 	r = r2 - i2 + X;
     }
-    return 0;
+    return [0, 0, 0];
 }
 
+function newton(X, Y) {
+    var r = X;
+    var i = Y;
+    //var c = new Complex(X, Y);
+    for(var n = 0; n < _precision; n++) {
+	// c = c.sub(c.mul(c.mul(c)).sub(1).div(c.mul(c).mul(3)));
+	var rr = r * r;
+	var ii = i * i;
+
+	var r2 = rr - ii;
+	var i2 = 2 * r * i;
+
+	var r3 = r * r2 - i * i2;
+	var i3 = r * i2 + i * r2;
+
+	var d = (r2 * r2 + i2 * i2) * 3;
+	r -= (r2 * (r3 - 1) + i2 * i3) / d;
+	i -= (r2 * i3 - i2 * (r3 - 1)) / d;
+
+	var n1 = (r - 1) * (r - 1) + i * i;
+	var n2 = (r + .5) * (r + .5) + (i - .866025404) * (i - .866025404);
+	var n3 = (r + .5) * (r + .5) + (i + .866025404) * (i + .866025404);
+	if(n1 < _epsilon) return [255 - (_smooth ? (n - Math.log(Math.log(1/(50*n1)))) : n) * _precision, 0, 0];
+	if(n2 < _epsilon) return [0, 255 - (_smooth ? (n - Math.log(Math.log(1/(50*n2)))): n) * _precision, 0];
+	if(n3 < _epsilon) return [0, 0, 255 - (_smooth ? (n - Math.log(Math.log(1/(50*n3)))) : n) * _precision];
+    }
+    return [0, 0, 0];
+}
+
+function julia(X, Y) {
+    var z = new Complex(X, Y);
+    for(var n = 0; n < _precision; n++) {
+	z = z.mul(z).add(_juliacst);
+	if(z.squareNorm() > _gamma) {
+	    n *= _juliacoef;
+	    //if(_smooth) n -= Math.log(Math.log(0.1 * z.squareNorm())); 
+	    return [n, n - 255 , n - 512];
+	}
+    }
+    return [0, 0, 0];
+}
+
+
+
 function fractalPlot(it, plotid) {
-    var xstart, ystart;
+    var xstart, ystart, ft;
     xstart = Math.floor(it / _flex);
     ystart = it % _flex;
     for(var x = xstart ; x <= _scr.w ; x+=_flex) {
 	var X = x2X(x);
 	if(plotid != _plotid) return;
 	for(var y = ystart ; y <= _scr.h ; y+=_flex) {
-	    var nit = 3 * 255 * mandelbrot(X, y2Y(y)) / _precision;
+	    var nit = _fractal(X, y2Y(y));
 	    var i = (x + y * _scr.w) * 4;
-	    _metadata[i++] = nit;
-	    _metadata[i++] = nit - 255;
-	    _metadata[i++] = nit - 2 * 255;
+	    _metadata[i++] = nit[0];
+	    _metadata[i++] = nit[1];
+	    _metadata[i++] = nit[2];
 	    _metadata[i++] = 255;
 	}
     }
@@ -267,8 +318,36 @@ function wheel(event, delta) {
     return false;
 }
 
+function fractalChange(event) {
+    var val = $("#fractal").val();
+    _fractal = window[val];
+    switch(val) {
+    case "mandelbrot":
+	_precision = 25;
+	$(".julia").hide();
+	break;
+    case "newton":
+	_precision = 20;
+	$(".julia").hide();
+	break;
+    case "julia":
+	_precision = 2000;
+	$(".julia").show();
+	break;
+    }
+    plot();
+}
+
+function juliaConstantChange(event) {
+    eval($("#juliacst").val());
+    plot();
+}
+
 $(window).load(
     function() {
+	// UI init
+	$("#fractal").change(fractalChange);
+	$("#juliacst").change(juliaConstantChange);
 	var eventSource = $('canvas');
 	eventSource.mousedown(mdown);
 	eventSource.mousemove(mmove);
@@ -285,8 +364,8 @@ $(window).load(
 	    x: Math.pow(_pow, _reg.X.zcoef),
 	    y: Math.pow(_pow, _reg.Y.zcoef)
 	};
-	_reg.X.min -= nw.x + .5;
-	_reg.X.max += nw.x - .5;
+	_reg.X.min -= nw.x;
+	_reg.X.max += nw.x;
 	_reg.Y.min -= nw.y;
 	_reg.Y.max += nw.y;
 	preCompute();
