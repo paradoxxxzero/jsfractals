@@ -22,8 +22,8 @@ var _smooth = true;
 var _plotid = 0;
 var _flex = 3;
 var _pow = 1.1;
-var _precision = 20;
-var _epsilon = .0001;
+var _precision = 2000;
+var _epsilon = 12;
 var _step = 1;
 var _reg = {
     X: {
@@ -71,34 +71,15 @@ function preCompute() {
     _reg.Y.__normed_range = _reg.Y.__range / _scr.h;
 }
 
-function newton(X, Y) {
-    var r = X;
-    var i = Y;
-    //var c = new Complex(X, Y);
-    for(var n = 0; n < 25; n++) {
-	// c = c.sub(c.mul(c.mul(c)).sub(1).div(c.mul(c).mul(3)));
-	var rr = r * r;
-	var ii = i * i;
-
-	var r2 = rr - ii;
-	var i2 = 2 * r * i;
-
-	var r3 = r * r2 - i * i2;
-	var i3 = r * i2 + i * r2;
-
-	var d = (r2 * r2 + i2 * i2) * 3;
-	r -= (r2 * (r3 - 1) + i2 * i3) / d;
-	i -= (r2 * i3 - i2 * (r3 - 1)) / d;
-
-
-	var n1 = (r - 1) * (r - 1) + i * i;
-	var n2 = (r + .5) * (r + .5) + (i - .866025404) * (i - .866025404);
-	var n3 = (r + .5) * (r + .5) + (i + .866025404) * (i + .866025404);
-	if(n1 < _epsilon) return [255 - (_smooth ? (n - Math.log(Math.log(1/(50*n1)))) : n) * _precision, 0, 0];
-	if(n2 < _epsilon) return [0, 255 - (_smooth ? (n - Math.log(Math.log(1/(50*n2)))): n) * _precision, 0];
-	if(n3 < _epsilon) return [0, 0, 255 - (_smooth ? (n - Math.log(Math.log(1/(50*n3)))) : n) * _precision];
+function julia(X, Y) {
+    var z = new Complex(X, Y);
+    var c = new Complex(-.8, .156);
+//    var c = new Complex(-.70176, -.3842);
+    for(var n = 0; n < _precision; n++) {
+	z = z.mul(z).add(c);
+	if(z.squareNorm() > _epsilon) return [n*=2, n - 255 , n - 512];
     }
-    return [0, 0, 0];
+    return [40, 40, 40];
 }
 
 function fractalPlot(it, plotid) {
@@ -109,7 +90,7 @@ function fractalPlot(it, plotid) {
 	var X = x2X(x);
 	if(plotid != _plotid) return;
 	for(var y = ystart ; y <= _scr.h ; y+=_flex) {
-	    var nit = newton(X, y2Y(y));
+	    var nit = julia(X, y2Y(y));
 	    var i = (x + y * _scr.w) * 4;
 	    _metadata[i++] = nit[0];
 	    _metadata[i++] = nit[1];
