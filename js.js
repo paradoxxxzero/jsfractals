@@ -24,7 +24,7 @@ var _flex = 3;
 var _pow = 1.1;
 var _precision = 25;
 var _epsilon = .0001;
-var _gamma = 2;
+var _gamma = 1337
 var _juliacoef = 2;
 var _juliacst = new Complex(-.8, .156);
 var _fractal = mandelbrot;
@@ -111,6 +111,46 @@ function mandelbrot(X, Y) {
     return [0, 0, 0];
 }
 
+function mandelbar(X, Y) {
+    var r = 0;
+    var i = 0;
+    for(var n = 0; n < _precision; n++) {
+	var r2 = r*r;
+	var i2 = i*i;
+	if (r2 + i2 > 4) {
+	    if(_smooth) n -= Math.log(Math.log(r2+i2)) / Math.LN2;
+	    n = 3 * 255 * n / _precision;
+	    return [n, n - 255, n - 2 * 255];
+	}
+	i = - 2 * r * i + Y;
+	r = r2 - i2 + X;
+    }
+    return [0, 0, 0];
+}
+
+function multibrot(X, Y) {
+    var r = 0;
+    var i = 0;
+    for(var n = 0; n < _precision; n++) {
+	var rr = r * r;
+	var ii = i * i;
+	var r2 = rr - ii;
+	var i2 = 2 * r * i;
+	var r3 = r * r2 - i * i2;
+	var i3 = r * i2 + i * r2;
+
+	if (r2 + i2 > 4) {
+	    if(_smooth) n -= Math.log(Math.log(r2+i2)) / Math.log(3);
+	    n = 3 * 255 * n / _precision;
+	    return [n, n - 255, n - 2 * 255];
+	}
+
+	i = i3 + Y;
+	r = r3 + X;
+    }
+    return [0, 0, 0];
+}
+
 function newton(X, Y) {
     var r = X;
     var i = Y;
@@ -161,7 +201,26 @@ function julia(X, Y) {
     return [0, 0, 0];
 }
 
-
+function burningship(X, Y) {
+//    var z = new Complex(X, Y);
+    var r = 0;
+    var i = 0;
+    for(var n = 0; n < _precision; n++) {
+//	z = z.mul(z).add(_juliacst);
+	var rr = r * r;
+	var ii = i * i;
+	i = Math.abs(2 * r * i);
+	r = rr - ii;
+	r += X;
+	i += Y;
+	if(rr + ii > _gamma) {
+	    if(_smooth) n -= Math.log(Math.log(rr + ii))*1.25;
+	    n *= 10;
+	    return [n, n - 255 , n - 2 * 255];
+	}
+    }
+    return [0, 0, 0];
+}
 
 function fractalPlot(it, plotid) {
     var xstart, ystart, ft;
@@ -172,7 +231,7 @@ function fractalPlot(it, plotid) {
 	if(plotid != _plotid) return;
 	for(var y = ystart ; y <= _scr.h ; y+=_flex) {
 	    var nit = _fractal(X, y2Y(y));
-	    var i = (x + y * _scr.w) * 4;
+	    var i = (x +  y * _scr.w) * 4;
 	    _metadata[i++] = nit[0];
 	    _metadata[i++] = nit[1];
 	    _metadata[i++] = nit[2];
@@ -336,26 +395,34 @@ function zoom(out, x, y, shift, alt) {
 function fractalChange() {
     var val = $("#fractal").val();
     _fractal = window[val];
+    if(val == "julia") {
+	$(".julia").show("fast");
+    } else {
+	$(".julia").hide("fast");
+	$(".juliacustom").hide("fast");
+    }
     switch(val) {
     case "mandelbrot":
 	_precision = 25;
-	$("#precision").val(_precision);
-	$(".julia").hide("fast");
-	$(".juliacustom").hide("fast");
+	break;
+    case "mandelbar":
+	_precision = 50;
 	break;
     case "newton":
 	_precision = 20;
-	$("#precision").val(_precision);
-	$(".julia").hide("fast");
-	$(".juliacustom").hide("fast");
 	break;
     case "julia":
 	_precision = 2000;
-	$("#precision").val(_precision);
-	$(".julia").show("fast");
 	juliaConstantChange();
 	break;
+    case "burningship":
+	_precision = 200;
+	break;
+    case "multibrot":
+	_precision = 100;
+	break;
     }
+    $("#precision").val(_precision);
     plot();
 }
 
@@ -364,7 +431,6 @@ function juliaConstantChange() {
     if(juliacst == "custom") {
 	$("#juliacstr").val(_juliacst.r);
 	$("#juliacsti").val(_juliacst.i);
-
 	$(".juliacustom").show("fast");
     } else {
 	$(".juliacustom").hide("fast");
