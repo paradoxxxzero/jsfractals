@@ -25,8 +25,8 @@ var _pow = 1.1;
 var _precision = 25;
 var _epsilon = .0001;
 var _gamma = 2;
-var _juliacst = new Complex(-.8, .156);
 var _juliacoef = 2;
+var _juliacst = new Complex(-.8, .156);
 var _fractal = mandelbrot;
 var _step = 1;
 var _reg = {
@@ -86,7 +86,7 @@ function mandelbrot(X, Y) {
 	    // And the period 2 cycle
 	    X2X + Y2 < -.9375
     ) {
-	return 0;
+	return [0, 0, 0];
     }
     // Iterating to see if Z is cool
     var r = 0;
@@ -141,13 +141,21 @@ function newton(X, Y) {
 }
 
 function julia(X, Y) {
-    var z = new Complex(X, Y);
+//    var z = new Complex(X, Y);
+    var r = X;
+    var i = Y;
     for(var n = 0; n < _precision; n++) {
-	z = z.mul(z).add(_juliacst);
-	if(z.squareNorm() > _gamma) {
+//	z = z.mul(z).add(_juliacst);
+	var rr = r * r;
+	var ii = i * i;
+	i = 2 * r * i;
+	r = rr - ii;
+	r += _juliacst.r;
+	i += _juliacst.i;
+	if(rr + ii > _gamma) {
+	    if(_smooth) n -= Math.log(Math.log(rr + ii))*1.25;
 	    n *= _juliacoef;
-	    //if(_smooth) n -= Math.log(Math.log(0.1 * z.squareNorm())); 
-	    return [n, n - 255 , n - 512];
+	    return [n, n - 255 , n - 2 * 255];
 	}
     }
     return [0, 0, 0];
@@ -177,7 +185,6 @@ function rplot(lvl, plotid) {
     fractalPlot(lvl, plotid);
     _data.data = _metadata;
     _c.putImageData(_data, 0, 0);
-
     var stime = ".";
     for(var p = 0; p < lvl; p++) {
 	stime += ".";
@@ -258,88 +265,135 @@ function kdown(event) {
     case 107:
     case 38:
 	_precision *= 2;
+	$("#precision").val(_precision);
 	break;
     case 109:
     case 40:
 	_precision /= 2;
+	$("#precision").val(_precision);
 	break;
     case 39:
 	_precision *= 1.1;
+	$("#precision").val(_precision);
 	break;
     case 37:
 	_precision /= 1.1;
+	$("#precision").val(_precision);
 	break;
     case 32:
 	_smooth = !_smooth;
+	$("#smoothing").attr("checked", (!$("#smoothing").is(":checked")));
 	break;
     default:
 	return;
     }
-
     plot();
 }
 
 function wheel(event, delta) {
+    zoom(delta < 0, event.clientX, event.clientY ,event.shiftKey, event.altKey);
+}
+
+function zoom(out, x, y, shift, alt) {
     var d = {
 	x: 0,
 	y: 0
     };
-    if(delta < 0) { // Zoom out
-	if(!event.shiftKey && _mode != 'y') {
+    if(out) { // Zoom out
+	if(!shift && _mode != 'y') {
 	    _reg.X.zcoef += _step;
 	    // a^n - a^(n-k) = (a^k-1)a^(n-k)
 	    // <=> Math.pow(_pow, _reg.X.zcoef) - Math.pow(_pow, _reg.X.zcoef - _step)
 	    d.x = (Math.pow(_pow, _step) - 1) * Math.pow(_pow, _reg.X.zcoef - _step);
 	}
-	if(!event.altKey && _mode != 'x') {
+	if(!alt && _mode != 'x') {
 	    _reg.Y.zcoef += _step;
 	    d.y = (Math.pow(_pow, _step) - 1) * Math.pow(_pow, _reg.Y.zcoef - _step);
 	}
     } else { // Zoom in
-	if(!event.shiftKey && _mode != 'y') {
+	if(!shift && _mode != 'y') {
 	    d.x = (1 - Math.pow(_pow, _step)) * Math.pow(_pow, _reg.X.zcoef - _step);
 	    _reg.X.zcoef -= _step;
 	}
-	if(!event.altKey && _mode != 'x') {
+	if(!alt && _mode != 'x') {
 	    d.y = (1 - Math.pow(_pow, _step)) * Math.pow(_pow, _reg.Y.zcoef - _step);
 	    _reg.Y.zcoef -= _step;
 	}
     }
     var p = {
-	x: event.clientX / _scr.w,
-	y: event.clientY / _scr.h};
-    _reg.X.min -= (2 * d.x * event.clientX) / _scr.w;
-    _reg.X.max += (2 * d.x * (_scr.w - event.clientX)) / _scr.w;
-    _reg.Y.min -= (2 * d.y * (_scr.h - event.clientY)) / _scr.h;
-    _reg.Y.max += (2 * d.y * event.clientY) / _scr.h;
+	x: x / _scr.w,
+	y: y / _scr.h};
+    _reg.X.min -= (2 * d.x * x) / _scr.w;
+    _reg.X.max += (2 * d.x * (_scr.w - x)) / _scr.w;
+    _reg.Y.min -= (2 * d.y * (_scr.h - y)) / _scr.h;
+    _reg.Y.max += (2 * d.y * y) / _scr.h;
     preCompute();
     plot();
     event.stopPropagation();
     return false;
 }
 
-function fractalChange(event) {
+function fractalChange() {
     var val = $("#fractal").val();
     _fractal = window[val];
     switch(val) {
     case "mandelbrot":
 	_precision = 25;
-	$(".julia").hide();
+	$("#precision").val(_precision);
+	$(".julia").hide("fast");
+	$(".juliacustom").hide("fast");
 	break;
     case "newton":
 	_precision = 20;
-	$(".julia").hide();
+	$("#precision").val(_precision);
+	$(".julia").hide("fast");
+	$(".juliacustom").hide("fast");
 	break;
     case "julia":
 	_precision = 2000;
-	$(".julia").show();
+	$("#precision").val(_precision);
+	$(".julia").show("fast");
+	juliaConstantChange();
 	break;
     }
     plot();
 }
 
-function juliaConstantChange(event) {
-    eval($("#juliacst").val());
+function juliaConstantChange() {
+    var juliacst = $("#juliacst").val();
+    if(juliacst == "custom") {
+	$("#juliacstr").val(_juliacst.r);
+	$("#juliacsti").val(_juliacst.i);
+
+	$(".juliacustom").show("fast");
+    } else {
+	$(".juliacustom").hide("fast");
+	eval(juliacst);
+	plot();
+    }
+}
+
+function juliaCustomClick() {
+    var r = $("#juliacstr").val();
+    var i = $("#juliacsti").val();
+    if(!r || !i || r == "" || i == "") return;
+    try {
+	r = parseFloat(r);
+	i = parseFloat(i);
+    } catch(x) {
+	return;
+    }
+    _juliacst = new Complex(r, i);
+    plot();
+}
+
+function smoothChange() {
+    _smooth = !_smooth;
+    plot();
+}
+
+function precisionChange() {
+    _precision = $("#precision").val();
     plot();
 }
 
@@ -348,6 +402,13 @@ $(window).load(
 	// UI init
 	$("#fractal").change(fractalChange);
 	$("#juliacst").change(juliaConstantChange);
+	$("#juliacustombtn").click(juliaCustomClick);
+	$("#smoothing").change(smoothChange);
+	$("#precision").bind("input", precisionChange);
+	$("#zoomplus").click(function () { zoom(false, _scr.w/2, _scr.h/2, false, false); });
+	$("#zoomminus").click(function () { zoom(true, _scr.w/2, _scr.h/2, false, false); });
+	$("#close").click(function () { $("#top").hide("slow"); $("#open").show("slow"); });
+	$("#open").click(function () { $("#top").show("slow");  $("#open").hide("slow"); });
 	var eventSource = $('canvas');
 	eventSource.mousedown(mdown);
 	eventSource.mousemove(mmove);
@@ -369,6 +430,6 @@ $(window).load(
 	_reg.Y.min -= nw.y;
 	_reg.Y.max += nw.y;
 	preCompute();
-	plot();
+	fractalChange();
     }
 );

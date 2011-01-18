@@ -1,20 +1,23 @@
+@font-face { font-family: monofur; src: url('monofur.ttf'); } 
+
 body {
    padding: 0;
    margin: 0;
    background-color: #000;
    overflow: hidden;
+   font-family: monofur;
 }
 
 #watermark {
    position: absolute;
-   top: 1px;
-   right: 1px;
-   font-size: 0.5em;
+   top: 14px;
+   right: 50px;
+   font-size: 0.8em;
 }
 
 #watermark a {
-   color: #222;
-   opacity: 0.3;
+   color: #fff;
+   opacity: 0.5;
    text-decoration: none;
 }
 
@@ -32,19 +35,65 @@ body {
     background-color: rgba(100, 100, 100, .5);
     color: #a2bbff;
     font-size: 16px;
+    z-index: 1337;
 }
 
 .combo {
-    margin: 0 5px;
-    height: 25px;
     min-width: 150px;
+}
+
+.text {
+    width: 50px;
+    margin: 0;
+}
+
+#precision {
+    width: 100px;
+}
+
+.button {
+    width: 50px;
+}
+
+.julia, .juliacustom {
+    display: none;
+}
+
+
+input, select{
+    margin: 0 5px;
     background-color: #000;
     font-weight: bold;
     color: #a2bbff;
     border: none;
+    -moz-border-radius: 5px;
     border-radius: 5px;
+    padding: 5px;
+    -moz-box-shadow: 0 0 10px #a2bbff;
+    box-shadow: 0 0 10px #a2bbff;
+    outline: none;
+    font-family: monofur;
 }
 
-.julia {
+input:hover, select:hover {
+    -moz-box-shadow: 0 0 10px #bbffa2;
+    box-shadow: 0 0 10px #bbffa2;
+}
+
+input:active, select:hover {
+    -moz-box-shadow: 0 0 10px #ffbba2;
+    box-shadow: 0 0 10px #ffbba2;
+}
+
+#close {
+    color: #ffbba2;
+    float: right;
+    margin-right: 20px;
+}
+
+#open {
+    position: absolute;
+    top: 10px;
+    right: 10px;
     display: none;
 }

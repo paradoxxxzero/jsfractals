@@ -21,21 +21,39 @@
   </head>
   <body id="body">
     <div id="top">
-      <span>Fractal: </span>
+      <label for="fractal">Fractal: </label>
       <select id="fractal" class="combo">
 	<option value="mandelbrot">Mandelbrot</option>
 	<option value="newton">Newton</option>
 	<option value="julia">Julia</option>
       </select>
-      <span class="julia">Julia constant: </span>
+      <label class="julia" for="juliacst">Julia constant: </label>
       <select id="juliacst" class="julia combo">
 	<option value="_juliacst=new Complex(-.8,.156);_juliacoef=2;">-0.8 + 0.156i</option>
 	<option value="_juliacst=new Complex(-.70176, -.3842);_juliacoef=10;">-0.70176 - 0.3842i</option>
 	<option value="_juliacst=new Complex(.4, .6);_juliacoef=10;">0.4 + 0.6i</option>
 	<option value="_juliacst=new Complex(.285, .01);_juliacoef=5;">0.285 + 0.01i</option>
+	<option value="custom">Custom:</option>
       </select>
-      <span id="formula"></span>
+      <input type="text" id="juliacstr" class="juliacustom text" />
+      <label class="juliacustom" for="juliacsti">+</label>
+      <input type="text" id="juliacsti" class="juliacustom text" />
+      <label class="juliacustom" for="juliacsti">i</label>
+      <input type="button" id="juliacustombtn" class="juliacustom button" value="ok" />
+
+      <label for="precision" title="Hotkey: +/- in/de-crease by 200%">Precision:</label>
+      <input type="number" title="Hotkey: +/- in/de-crease by 200%" id="precision" value="20" step="10" min="10" />
+
+      <label title="Hotkey: Mouse scroll">Zoom:</label>
+      <input type="button" id="zoomplus" value=" + "  title="Hotkey: Mouse scroll up" />
+      <input type="button" id="zoomminus" value=" - "  title="Hotkey: Mouse scroll down" />
+
+      <input type="checkbox" id="smoothing" checked="checked" title="Hotkey: space" />
+      <label for="smoothing" title="Hotkey: space">Smoothing</label>
+
+      <input type="button" id="close" value=" X " />
     </div>
+    <input type="button" id="open" value=" < " />
     <canvas id="canvas">
     </canvas>
     <div id="watermark"><a href="http://paradoxxxzero.tk/">© 2011 Mounier Florian</a></div>

@@ -42,19 +42,37 @@ Complex.prototype.sub = function (c) {
 
 Complex.prototype.mul = function (c) {
     if(typeof(c) == "number") c = new Complex(c, 0);
-    var res = this.clone();
-    res.r = this.r * c.r - this.i * c.i;
-    res.i = this.r * c.i + this.i * c.r;
-    return res;
+    var r = c.r;
+    var i = c.i;
+    var tr = this.r;
+    this.r = this.r * r - this.i * i;
+    this.i = tr * i + this.i * r;
+    return this;
 }
 
 Complex.prototype.div = function (c) {
     if(typeof(c) == "number") c = new Complex(c, 0);
-    var res = this.clone();
     var sn = c.squareNorm();
-    res.r = (this.r * c.r + this.i * c.i) / sn;
-    res.i = (c.r * this.i - this.r * c.i) / sn;
-    return res;
+    var r = c.r;
+    var i = c.i;
+    var tr = this.r;
+    this.r = (this.r * r + this.i * i) / sn;
+    this.i = (r * this.i - tr * i) / sn;
+    return this;
+}
+
+Complex.prototype.pow = function (exp) {
+    if(exp == 0) {
+	this.r = 1;
+	this.i = 0;
+    } else {
+	var r = this.r;
+	var i = this.i;
+	for(var e = 1 ; e < exp ; e++) {
+	    this.mul(new Complex(r, i));
+	}
+    }
+    return this;
 }
 
 Complex.prototype.squareNorm = function () {
